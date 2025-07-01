@@ -28,7 +28,7 @@ proc collectVecImpl(initTWithLen, vecExpr: NimNode, len = newLit DefLen): NimNod
 
   var body = newStmtList()
   var identNodes: seq[NimNode]
-  let nExpr = subsLeaves(exp, idxVar, identNodes)
+  let nExpr = subsLeaves(exp, idxVar, result, identNodes)
 
   let nodeForLen = identNodes[0]
 

@@ -19,3 +19,13 @@ test "ops with function call within":
     c = collectVecAsSeq a + b * f(a)
 
   check c == @[7, 14]
+
+test "ops with vec lit within":
+  var cnt = 0
+  proc valGen(): int =
+    cnt.inc
+    3
+
+  check collectVecAsSeq([1, valGen()] + [valGen(), 2]) == @[4, 5]
+  check cnt == 2  # test literal won't be evaluated multiple times
+
