@@ -1,56 +1,10 @@
 
-import std/typetraits
-import ./oneLoopVecOps/[macroutils, subs]
+import std/macros
+import ./oneLoopVecOps/[impl]
 
+macro collectVec*(initTWithLen: typed, vecExpr; len = DefLen): untyped = collectVecImpl(initTWithLen, vecExpr, len)
 
-const DefLen = -1
-
-proc isDefLenNode(n: NimNode): bool =
-  ## check if a node is a default length node
-  n.kind == nnkIntLit and n.intVal == DefLen
-
-proc collectVecImpl(initTWithLen, vecExpr: NimNode, len = newLit DefLen): NimNode =
-  ## .. warning:: if `len` is not given, pick a arbitrary node to get length for loop
-  var exp = vecExpr
-  if exp.kind == nnkStmtList:
-    expectLen exp, 1
-    exp = exp[0]
-  assert exp.kind == nnkInfix
-
-  let idxVar = genSym(nskForVar, "index")
-
-  result = newStmtList()
-
-  let resVar = genSym(nskVar, "collectRes")
-  
-  var loop = nnkForStmt.newTree(idxVar)
-  
-
-  var body = newStmtList()
-  var identNodes: seq[NimNode]
-  let nExpr = subsLeaves(exp, idxVar, result, identNodes)
-
-  let nodeForLen = identNodes[0]
-
-  let T = newCall(bindSym"elementType", nodeForLen)
-  let len = if len.isDefLenNode: newCall("len", nodeForLen) else: len
-  result.add newVarStmt(resVar, newCall(initTWithLen.newBracket(T), len))
-  let rng = when defined(oneLoopVecParallelOps):
-    infix(newLit 0, "||", infix(len, "-", newLit 1))
-  else:
-    infix(newLit 0, "..<", len)
-  loop.add rng
-
-  body.add newAssignment(resVar.newBracket(idxVar), nExpr)
-  loop.add body
-
-  result.add loop
-
-  result.add resVar
-
-macro collectVec*(initTWithLen: typed, vecExpr; len = -1): untyped = collectVecImpl(initTWithLen, vecExpr, len)
-
-macro collectVecAsSeq*(vecExpr; len = -1): seq = collectVecImpl(bindSym"newSeqUninit", vecExpr, len)
+macro collectVecAsSeq*(vecExpr; len = DefLen): seq = collectVecImpl(bindSym"newSeqUninit", vecExpr, len)
 
 when isMainModule:
   let
