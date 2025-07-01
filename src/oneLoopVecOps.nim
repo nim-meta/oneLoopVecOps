@@ -24,18 +24,20 @@ proc collectVecImpl(initTWithLen, vecExpr: NimNode, len = newLit DefLen): NimNod
   let resVar = genSym(nskVar, "collectRes")
   
   var loop = nnkForStmt.newTree(idxVar)
-  var nodeForLen = exp[2]
-  while nodeForLen.len != 0:
-    assert nodeForLen.kind == nnkInfix
-    nodeForLen = nodeForLen[2]
+  
+
+  var body = newStmtList()
+  var identNodes: seq[NimNode]
+  let nExpr = subsLeaves(exp, idxVar, identNodes)
+
+  let nodeForLen = identNodes[0]
+
   let T = newCall(bindSym"elementType", nodeForLen)
   let len = if len.isDefLenNode: newCall("len", nodeForLen) else: len
   result.add newVarStmt(resVar, newCall(initTWithLen.newBracket(T), len))
   let rng = infix(newLit 0, "..<", len)
   loop.add rng
 
-  var body = newStmtList()
-  let nExpr = subsInfixLeaves(exp, idxVar)
   body.add newAssignment(resVar.newBracket(idxVar), nExpr)
   loop.add body
 

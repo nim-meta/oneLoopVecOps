@@ -1,14 +1,20 @@
 
 import ./macroutils
-proc subsInfixLeaves*(infixExpr, idxVar: NimNode): NimNode =
-  ## LIMIT: only for sure works for infix expressions, no sure if works for other types
-  infixExpr.expectKind nnkInfix
-  result = infixExpr.copyNimNode
-  result.add infixExpr[0]
-  let
-    lhs = infixExpr[1]
-    rhs = infixExpr[2]
-  template addLeaf(n) =
-    result.add if n.len == 0: n.newBracket(idxVar) else: subsInfixLeaves(n, idxVar)
-  addLeaf lhs
-  addLeaf rhs
+proc subsLeaves*(exp, idxVar: NimNode, identNodes: var seq[NimNode]): NimNode =
+  result = exp.copyNimNode
+  template addLeaf(n: NimNode) =
+    result.add subsLeaves(n, idxVar, identNodes)
+  case exp.kind
+  of nnkIdent, nnkSym:
+    result = exp.newBracket(idxVar)
+    identNodes.add exp
+  of nnkInfix:
+    result.add exp[0]
+    addLeaf exp[1]
+    addLeaf exp[2]
+  of nnkCall, nnkCommand:
+    result.add exp[0]
+    for i in 1..<exp.len:
+      addLeaf exp[i]
+  else:
+    error "unconsidered node kind: " & $exp.kind, exp
