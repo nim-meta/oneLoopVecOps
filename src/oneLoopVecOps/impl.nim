@@ -34,10 +34,10 @@ proc collectVecImpl*(initTWithLen, vecExpr: NimNode, len = newLit DefLen): NimNo
   let T = newCall(bindSym"elementType", nodeForLen)
   let len = if len.isDefLenNode: newCall("len", nodeForLen) else: len
   result.add newVarStmt(resVar, newCall(initTWithLen.newBracket(T), len))
-  let rng = when defined(oneLoopVecParallelOps):
-    infix(newLit 0, "||", infix(len, "-", newLit 1))
-  else:
+  let rng = when defined(oneLoopVecNonParallelOps):
     infix(newLit 0, "..<", len)
+  else:
+    infix(newLit 0, "||", infix(len, "-", newLit 1))
   loop.add rng
 
   body.add newAssignment(resVar.newBracket(idxVar), nExpr)
