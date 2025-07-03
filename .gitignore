@@ -1,0 +1,7 @@
+nimcache/
+.cache/
+*~
+
+.vscode/
+.idea/
+.vs/
